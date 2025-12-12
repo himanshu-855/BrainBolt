@@ -1,0 +1,17 @@
+# This is a config for E2B sandbox template.
+# You can use template ID (t4adxic5cuefy83y6aw5) or template name (vide-nextjs-test-2) to create a sandbox:
+
+# Python SDK
+# from e2b import Sandbox, AsyncSandbox
+# sandbox = Sandbox.create("vide-nextjs-test-2") # Sync sandbox
+# sandbox = await AsyncSandbox.create("vide-nextjs-test-2") # Async sandbox
+
+# JS SDK
+# import { Sandbox } from 'e2b'
+# const sandbox = await Sandbox.create('vide-nextjs-test-2')
+
+team_id = "c2bd1899-c4af-4d9f-a6fa-c593e91628d4"
+start_cmd = "/compile_page.sh"
+dockerfile = "e2b.Dockerfile"
+template_name = "vide-nextjs-test-2"
+template_id = "t4adxic5cuefy83y6aw5"
