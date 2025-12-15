@@ -5,25 +5,32 @@ import {
   gemini,
   createTool,
   createNetwork,
+  Tool,
 } from "@inngest/agent-kit";
 import { Sandbox } from "@e2b/code-interpreter";
 import { getSandbox, lastAssistantTextMessageContent } from "./utils";
 import { z } from "zod";
 import { PROMPT } from "@/prompt";
+import prisma from "@/lib/db";
 
-export const helloWorld = inngest.createFunction(
-  { id: "hello-world" },
-  { event: "test/hello.world" },
+interface AgentState {
+  summary: string;
+  files:{ [path: string]: string };
+};
+
+export const codeAgentFunction = inngest.createFunction(
+  { id: "code-agent" },
+  { event: "code-agent/run" },
   async ({ event, step }) => {
     const sandboxId = await step.run("get-sandbox-id", async () => {
       const sandbox = await Sandbox.create("vide-nextjs-test-2");
       return sandbox.sandboxId;
     });
-    const summarizer = createAgent({
+    const summarizer = createAgent<AgentState>({
       name: "summarizer",
       description: "An Expert Coding Agent",
       system: PROMPT,
-      // model: openai({ 
+      // model: openai({
       // model: "gpt-5.2",
       // defaultParameters: {
       // temperature: 0.1
@@ -74,7 +81,9 @@ export const helloWorld = inngest.createFunction(
               })
             ),
           }),
-          handler: async ({ files }, { step, network }) => {
+          handler: async ({ files }, 
+            { step, network }: Tool.Options<AgentState>
+          ) => {
             const newFiles = await step?.run(
               "createorupdatefiles",
               async () => {
@@ -131,7 +140,7 @@ export const helloWorld = inngest.createFunction(
         },
       },
     });
-    const network = createNetwork({
+    const network = createNetwork<AgentState>({
       name: "coding-agent-network",
       agents: [summarizer],
       maxIter: 15,
@@ -146,17 +155,48 @@ export const helloWorld = inngest.createFunction(
     });
 
     const result = await network.run(event.data.value);
+
+    const isError = 
+    !result.state.data.summary || 
+    Object.keys(result.state.data.files || {}). length === 0;
+
     const sandboxUrl = await step.run("get-sandbox-url", async () => {
       const sandbox = await getSandbox(sandboxId);
       const host = sandbox.getHost(3000);
       return `https://${host}`;
     });
 
+    await step.run("save-result", async () => {
+      if(isError) {
+        return await prisma.message.create({
+          data: {
+            content: "Something went wrong, Please Try Again Later",
+            role: "ASSISTANT",
+            type: "ERROR"
+          },
+        });
+      }
+
+      return await prisma.message.create({
+        data: {
+          content: result.state.data.summary,
+          role: "ASSISTANT",
+          type: "RESULT",
+          fragment: {
+            create: {
+            sandboxUrl: sandboxUrl,
+          title: "fragment",
+          files: result.state.data.files,
+        }
+          }
+        }
+      })
+    });
     return {
       url: sandboxUrl,
       title: "fragment",
-      files: result.state.data.files,
-      summary: result.state.data.summary,
+      files: result.state.data.files || {},
+      summary: result.state.data.summary || "",
     };
   }
 );
