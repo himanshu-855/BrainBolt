@@ -37,7 +37,7 @@ export const codeAgentFunction = inngest.createFunction(
       // },
       // }),
       model: gemini({
-        model: "gemini-1.5-pro",
+        model: "gemini-2.5-flash",
       }),
       tools: [
         createTool({
@@ -81,7 +81,8 @@ export const codeAgentFunction = inngest.createFunction(
               })
             ),
           }),
-          handler: async ({ files }, 
+          handler: async (
+            { files },
             { step, network }: Tool.Options<AgentState>
           ) => {
             const newFiles = await step?.run(
@@ -170,6 +171,7 @@ export const codeAgentFunction = inngest.createFunction(
       if(isError) {
         return await prisma.message.create({
           data: {
+            projectId: event.data.projectId,
             content: "Something went wrong, Please Try Again Later",
             role: "ASSISTANT",
             type: "ERROR"
@@ -179,18 +181,19 @@ export const codeAgentFunction = inngest.createFunction(
 
       return await prisma.message.create({
         data: {
+          projectId: event.data.projectId,
           content: result.state.data.summary,
           role: "ASSISTANT",
           type: "RESULT",
           fragment: {
             create: {
-            sandboxUrl: sandboxUrl,
-          title: "fragment",
-          files: result.state.data.files,
-        }
-          }
-        }
-      })
+              sandboxUrl: sandboxUrl,
+              title: "fragment",
+              files: result.state.data.files,
+            },
+          },
+        },
+      });
     });
     return {
       url: sandboxUrl,
