@@ -5,8 +5,7 @@ import { trpc } from "@/trpc/client";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { useRouter } from "next/router";
-import { Variable } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const page = () => {
   const router = useRouter();
@@ -17,7 +16,7 @@ const page = () => {
       toast.error(error.message);
     },
     onSuccess: (data) => {
-      router.push(`/projects/${data.id}`)
+      router.push(`/projects/${data.id}`);
     },
   });
 
