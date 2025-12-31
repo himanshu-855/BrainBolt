@@ -16,23 +16,28 @@ export const MessagesContainer = ({ projectId ,
   setActiveFragment
 }: Props) => {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const lastAssistantMessageIdRef = useRef<string | null>(null);
   const [messages] = trpc.messages.getMany.useSuspenseQuery(
     {
       projectId: projectId,
     }, {
-      //TODO Temporary live message update
       refetchInterval: 5000,
     }
   );
-  //  TODO: This is Causing an Error
-  // useEffect(() => {
-  //   const lastAssistantMessagewithFragment = messages.findLast(
-  //     (message) => message.role === "ASSISTANT" && !! message.fragment,
-  //   );
-  //   if(lastAssistantMessagewithFragment) {
-  //    setActiveFragment(lastAssistantMessagewithFragment.fragment);
-  //   }  
-  // }, [messages, setActiveFragment]);
+
+  useEffect(() => {
+    const lastAssistantMessage = messages.findLast(
+      (message) => message.role === "ASSISTANT"
+    );
+
+    if (
+      lastAssistantMessage?.fragment && 
+      lastAssistantMessage.id !== lastAssistantMessageIdRef.current
+    ) {
+      setActiveFragment(lastAssistantMessage.fragment);
+      lastAssistantMessageIdRef.current = lastAssistantMessage.id;
+    }
+  }, [messages, setActiveFragment]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView();

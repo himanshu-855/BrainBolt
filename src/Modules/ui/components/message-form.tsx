@@ -32,9 +32,9 @@ export const MessageFrom = ({ projectId }: Props) => {
   const createMessage = trpc.messages.create.useMutation({
     onSuccess: () => {
       form.reset();
-      queryClient.invalidateQueries(
-        trpc.messages.getMany.useQuery({ projectId })
-      );
+      queryClient.invalidateQueries({
+        queryKey: [["messages", "getMany"], { input: { projectId } }],
+      });
       // TODO: INVALIDATE USAGE STATUS
     },
     onError: (error) => {
