@@ -16,7 +16,6 @@ import { useRouter } from "next/navigation";
 import { PROJECT_TEMPLATES } from "../../constants";
 import { useClerk } from "@clerk/nextjs";
 
-
 const formSchema = z.object({
   value: z
     .string()
@@ -25,7 +24,7 @@ const formSchema = z.object({
 });
 
 export const ProjectForm = () => {
-    const router = useRouter();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const clerk = useClerk();
   const form = useForm<z.infer<typeof formSchema>>({
@@ -39,16 +38,20 @@ export const ProjectForm = () => {
       queryClient.invalidateQueries({
         queryKey: [["projects", "getMany"]],
       });
+      queryClient.invalidateQueries({
+        queryKey: [["usage", "status"]],
+      });
       router.push(`/projects/${data.id}`);
-      // TODO: INVALIDATE USAGE STATUS
     },
     onError: (error) => {
       toast.error(error.message);
-      
+
       if (error.data?.code === "UNAUTHORIZED") {
         clerk.openSignIn();
       }
-      // Redirect to Billing Page if specific error occured
+      if (error.data?.code === "TOO_MANY_REQUESTS") {
+        router.push("/pricing");
+      }
     },
   });
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -62,8 +65,8 @@ export const ProjectForm = () => {
       shouldDirty: true,
       shouldValidate: true,
       shouldTouch: true,
-    })
-  }
+    });
+  };
 
   const [isFocused, setIsFocused] = useState(false);
   const isPending = createProject.isPending;
@@ -76,7 +79,7 @@ export const ProjectForm = () => {
           onSubmit={form.handleSubmit(onSubmit)}
           className={cn(
             "relative border p-4 pt-1 rounded-xl bg-sidebar dark:bg-sidebar transition-all",
-            isFocused && "shadow-xs"
+            isFocused && "shadow-xs",
           )}
         >
           <FormField
@@ -115,7 +118,7 @@ export const ProjectForm = () => {
               disabled={isButtonDisabled}
               className={cn(
                 "size-8 rounded-full",
-                isButtonDisabled && "bg-muted-foreground border"
+                isButtonDisabled && "bg-muted-foreground border",
               )}
             >
               {isPending ? (

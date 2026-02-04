@@ -5,11 +5,15 @@ import TextareaAutosize from "react-textarea-autosize";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowUpIcon, Loader2Icon } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Form, FormField } from "@/components/ui/form";
+import { Usage } from "./usage";
+import { useRouter } from "next/navigation";
+
+
 interface Props {
   projectId: string;
 }
@@ -23,6 +27,10 @@ const formSchema = z.object({
 
 export const MessageFrom = ({ projectId }: Props) => {
   const queryClient = useQueryClient();
+  const router = useRouter();
+
+  const { data: usage } = trpc.usage.status.useQuery();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -35,11 +43,17 @@ export const MessageFrom = ({ projectId }: Props) => {
       queryClient.invalidateQueries({
         queryKey: [["messages", "getMany"], { input: { projectId } }],
       });
-      // TODO: INVALIDATE USAGE STATUS
+      queryClient.invalidateQueries({
+        queryKey: [["usage", "status"]],
+      });
     },
     onError: (error) => {
       // Redirect to Billing Page if specific error occured
       toast.error(error.message);
+
+      if(error.data?.code === "TOO_MANY_REQUESTS"){
+        router.push("/pricing")
+      }
     },
   });
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -50,18 +64,24 @@ export const MessageFrom = ({ projectId }: Props) => {
   };
 
   const [isFocused, setIsFocused] = useState(false);
-  const showUsage = false;
   const isPending = createMessage.isPending;
-  const isButtonDisabled = isPending || form.formState.isValid;
+  const isButtonDisabled = isPending || !form.formState.isValid;
+  const showUsage = !!usage;
 
   return (
     <Form {...form}>
+      {showUsage && (
+        <Usage
+          points={usage.remainingPoints}
+          msBeforeNext={usage.msBeforeNext}
+        />
+      )}
       <form
         onSubmit={form.handleSubmit(onSubmit)}
         className={cn(
           "relative border p-4 pt-1 rounded-xl bg-sidebar dark:bg-sidebar transition-all",
           isFocused && "shadow-xs",
-          showUsage && "rounded-t-tone"
+          showUsage && "rounded-t-tone",
         )}
       >
         <FormField
@@ -100,7 +120,7 @@ export const MessageFrom = ({ projectId }: Props) => {
             disabled={isButtonDisabled}
             className={cn(
               "size-8 rounded-full",
-              isButtonDisabled && "bg-muted-foreground border"
+              isButtonDisabled && "bg-muted-foreground border",
             )}
           >
             {isPending ? (
