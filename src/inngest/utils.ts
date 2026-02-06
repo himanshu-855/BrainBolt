@@ -1,8 +1,10 @@
 import { Sandbox } from "@e2b/code-interpreter";
 import { Agent, AgentResult, Message, TextMessage } from "@inngest/agent-kit";
+import { SANDBOX_TIMEOUT } from "./types";
 
 export async function getSandbox(sandboxId: string) {
   const sandbox = await Sandbox.connect(sandboxId);
+  await sandbox.setTimeout(SANDBOX_TIMEOUT); //TODO: For half hour = 60_000 * 10 * 3
   return sandbox;
 }
 
