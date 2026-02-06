@@ -21,7 +21,7 @@ export const MessagesContainer = ({ projectId ,
     {
       projectId: projectId,
     }, {
-      refetchInterval: 5000,
+      refetchInterval: 3000,
     }
   );
 

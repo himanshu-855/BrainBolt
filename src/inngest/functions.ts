@@ -14,6 +14,7 @@ import { getSandbox, lastAssistantTextMessageContent, parseAgentOutput } from ".
 import { z } from "zod";
 import { FRAGMENT_TITLE_PROMPT, PROMPT, RESPONSE_PROMPT } from "@/prompt";
 import prisma from "@/lib/db";
+import { SANDBOX_TIMEOUT } from "./types";
 
 interface AgentState {
   summary: string;
@@ -27,6 +28,7 @@ export const codeAgentFunction = inngest.createFunction(
   async ({ event, step }) => {
     const sandboxId = await step.run("get-sandbox-id", async () => {
       const sandbox = await Sandbox.create("vide-nextjs-test-2");
+      await sandbox.setTimeout(SANDBOX_TIMEOUT); //TODO: For half hour = 60_000 * 10 * 3
       return sandbox.sandboxId;
     });
 
@@ -42,6 +44,7 @@ export const codeAgentFunction = inngest.createFunction(
         orderBy: {
           createdAt: "desc", //TODO: Change it to ASEC if AI do not understrand what you mean...
         },
+        take: 5,
       });
       for(const message of messages){
         formattedMessages.push({
@@ -51,7 +54,7 @@ export const codeAgentFunction = inngest.createFunction(
         })
       }
 
-      return formattedMessages;
+      return formattedMessages.reverse();
     });
 
     const state = createState<AgentState>(
