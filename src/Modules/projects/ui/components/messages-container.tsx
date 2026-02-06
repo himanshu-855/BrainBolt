@@ -68,7 +68,7 @@ export const MessagesContainer = ({ projectId ,
         </div>
       </div>
       <div className="relative p-3 pt-1">
-        <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-b from-transparent to-background/70 pointer-events-none: "></div>
+        <div className="absolute -top-6 left-0 right-0 h-6 bg-linear-to-b from-transparent to-background/70 pointer-events-none"></div>
         <MessageFrom projectId={projectId}/>
       </div>
     </div>
